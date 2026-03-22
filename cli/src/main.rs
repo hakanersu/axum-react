@@ -3,30 +3,26 @@ use colored::*;
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use std::fs;
 use std::path::Path;
+use std::process::{Command, exit};
 
-/// RustStack CLI - Code generator for the RustStack framework.
-///
-/// `#[derive(Parser)]` auto-generates the CLI argument parsing code.
-/// clap reads these struct fields and attributes to build help text,
-/// validate inputs, and parse command-line arguments.
 #[derive(Parser)]
-#[command(name = "ruststack")]
-#[command(about = "RustStack - Full-stack Rust + React framework CLI")]
+#[command(name = "sekizgen")]
+#[command(about = "Sekizgen - Full-stack Rust + React framework CLI")]
 #[command(version)]
 struct Cli {
-    /// The subcommand to run (generate, etc.)
     #[command(subcommand)]
     command: Commands,
 }
 
-/// Available CLI subcommands.
-///
-/// Rust enums + clap = powerful subcommand system.
-/// Each variant becomes a subcommand: `ruststack generate ...`
 #[derive(Subcommand)]
 enum Commands {
+    /// Create a new project from the sekizgen template
+    New {
+        /// Project name (e.g. "blog" or "my_app")
+        name: String,
+    },
     /// Generate code scaffolding
-    #[command(alias = "g")] // `ruststack g` is a shortcut for `ruststack generate`
+    #[command(alias = "g")]
     Generate {
         #[command(subcommand)]
         what: GenerateType,
@@ -69,6 +65,7 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::New { name } => new_project(&name),
         Commands::Generate { what } => match what {
             GenerateType::Model { name, fields } => generate_model(&name, &fields),
             GenerateType::Controller { name, actions } => generate_controller(&name, &actions),
@@ -82,6 +79,70 @@ fn main() {
             }
         },
     }
+}
+
+const TEMPLATE_REPO: &str = "https://github.com/hakanersu/axum-react";
+
+fn new_project(name: &str) {
+    let snake = name.to_snake_case();
+
+    // Guard: don't overwrite an existing directory
+    if Path::new(&snake).exists() {
+        eprintln!("{}", format!("Error: directory '{}' already exists.", snake).red());
+        exit(1);
+    }
+
+    println!("{}", format!("Creating new project: {}", snake).bold());
+
+    // 1. Clone the template (shallow, no history)
+    println!("  {} Cloning template...", "→".cyan());
+    let status = Command::new("git")
+        .args(["clone", "--depth=1", TEMPLATE_REPO, &snake])
+        .status()
+        .unwrap_or_else(|_| { eprintln!("{}", "Error: git not found in PATH.".red()); exit(1); });
+
+    if !status.success() {
+        eprintln!("{}", "Error: git clone failed.".red());
+        exit(1);
+    }
+
+    // 2. Remove the template's git history
+    fs::remove_dir_all(format!("{}/.git", snake))
+        .expect("Failed to remove .git directory");
+
+    // 3. Remove runtime artifacts
+    let _ = fs::remove_file(format!("{}/data.db", snake));
+
+    // 4. Rename "ruststack" → project name in key files
+    println!("  {} Configuring project name...", "→".cyan());
+    let files_to_rename = [
+        format!("{}/backend/Cargo.toml", snake),
+        format!("{}/cli/Cargo.toml", snake),
+        format!("{}/Cargo.toml", snake),
+    ];
+    for path in &files_to_rename {
+        if let Ok(content) = fs::read_to_string(path) {
+            let updated = content.replace("ruststack", &snake);
+            fs::write(path, updated).unwrap_or_else(|_| eprintln!("Warning: could not update {}", path));
+        }
+    }
+
+    // 5. Init a fresh git repository
+    println!("  {} Initialising git repository...", "→".cyan());
+    let run = |args: &[&str]| {
+        Command::new("git").args(args).current_dir(&snake).status().ok();
+    };
+    run(&["init"]);
+    run(&["add", "."]);
+    run(&["commit", "-m", "Initial commit"]);
+
+    // 6. Done
+    println!();
+    println!("{}", format!("✓ Project '{}' created successfully!", snake).green().bold());
+    println!();
+    println!("Next steps:");
+    println!("  cd {}", snake);
+    println!("  make dev");
 }
 
 /// Maps CLI field types to Rust types.
