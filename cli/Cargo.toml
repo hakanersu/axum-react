@@ -1,0 +1,18 @@
+[package]
+name = "ruststack-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ruststack"
+path = "src/main.rs"
+
+[dependencies]
+# clap is Rust's most popular CLI argument parser.
+# The `derive` feature lets us define CLI structure using struct attributes
+# instead of building it manually with method calls.
+clap = { version = "4", features = ["derive"] }
+# For colored terminal output
+colored = "2"
+# For converting between cases: snake_case, PascalCase, etc.
+heck = "0.5"
