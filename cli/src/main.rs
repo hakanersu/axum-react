@@ -119,6 +119,9 @@ fn new_project(name: &str) {
         format!("{}/backend/Cargo.toml", snake),
         format!("{}/cli/Cargo.toml", snake),
         format!("{}/Cargo.toml", snake),
+        format!("{}/Makefile", snake),
+        format!("{}/frontend/package.json", snake),
+        format!("{}/frontend/package-lock.json", snake),
     ];
     for path in &files_to_rename {
         if let Ok(content) = fs::read_to_string(path) {
@@ -127,7 +130,19 @@ fn new_project(name: &str) {
         }
     }
 
-    // 5. Init a fresh git repository
+    // 5. Install frontend dependencies
+    println!("  {} Installing frontend dependencies...", "→".cyan());
+    let npm_status = Command::new("npm")
+        .args(["install"])
+        .current_dir(format!("{}/frontend", snake))
+        .status()
+        .unwrap_or_else(|_| { eprintln!("{}", "Warning: npm not found, run `npm install` in frontend/ manually.".yellow()); exit(1); });
+
+    if !npm_status.success() {
+        eprintln!("{}", "Warning: npm install failed, run it manually in frontend/.".yellow());
+    }
+
+    // 7. Init a fresh git repository
     println!("  {} Initialising git repository...", "→".cyan());
     let run = |args: &[&str]| {
         Command::new("git").args(args).current_dir(&snake).status().ok();
@@ -136,7 +151,7 @@ fn new_project(name: &str) {
     run(&["add", "."]);
     run(&["commit", "-m", "Initial commit"]);
 
-    // 6. Done
+    // 8. Done
     println!();
     println!("{}", format!("✓ Project '{}' created successfully!", snake).green().bold());
     println!();
