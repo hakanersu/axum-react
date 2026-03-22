@@ -113,7 +113,7 @@ fn new_project(name: &str) {
     // 3. Remove runtime artifacts
     let _ = fs::remove_file(format!("{}/data.db", snake));
 
-    // 4. Rename "ruststack" → project name in key files
+    // 4. Rename "sekizgen" → project name in key files
     println!("  {} Configuring project name...", "→".cyan());
     let files_to_rename = [
         format!("{}/backend/Cargo.toml", snake),
@@ -122,7 +122,7 @@ fn new_project(name: &str) {
     ];
     for path in &files_to_rename {
         if let Ok(content) = fs::read_to_string(path) {
-            let updated = content.replace("ruststack", &snake);
+            let updated = content.replace("sekizgen", &snake);
             fs::write(path, updated).unwrap_or_else(|_| eprintln!("Warning: could not update {}", path));
         }
     }
