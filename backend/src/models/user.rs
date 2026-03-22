@@ -1,4 +1,3 @@
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::any::AnyRow;
 use sqlx::Row;
@@ -70,7 +69,7 @@ pub struct LoginDto {
 
 /// What we return to the frontend after login/registration.
 /// Notice: NO password_hash field here - this is a public-facing struct.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserResponse {
     pub id: String,
     pub email: String,

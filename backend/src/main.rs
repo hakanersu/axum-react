@@ -10,7 +10,8 @@ mod models;
 mod routes;
 
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use axum::http::{HeaderName, Method};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions::cookie::{time::Duration, SameSite};
@@ -78,8 +79,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // so we need to allow cross-origin requests from it.
     let cors = CorsLayer::new()
         .allow_origin(config.frontend_url.parse::<axum::http::HeaderValue>()?)
-        .allow_methods(Any)
-        .allow_headers(Any)
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_headers([
+            HeaderName::from_static("content-type"),
+            HeaderName::from_static("authorization"),
+            HeaderName::from_static("x-requested-with"),
+        ])
         .allow_credentials(true); // Required for cookies to work cross-origin!
 
     // Build shared application state.

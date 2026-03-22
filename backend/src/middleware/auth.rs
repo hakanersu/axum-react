@@ -36,7 +36,6 @@ pub struct AuthUser {
 /// `#[async_trait]` is a macro that makes async functions work in traits.
 /// Rust doesn't support `async fn` in traits natively yet (it's coming in future versions),
 /// so this macro transforms it into something the compiler accepts.
-#[axum::async_trait]
 impl<S> FromRequestParts<S> for AuthUser
 where
     S: Send + Sync, // Required bounds - S is the application state type

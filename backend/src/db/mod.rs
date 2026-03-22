@@ -1,4 +1,4 @@
-use sqlx::any::{AnyPool, AnyPoolOptions};
+use sqlx::{AnyPool, any::AnyPoolOptions};
 use crate::config::AppConfig;
 
 /// Database connection pool wrapper.

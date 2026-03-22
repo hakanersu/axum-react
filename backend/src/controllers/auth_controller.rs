@@ -1,6 +1,5 @@
 use axum::{extract::State, Json};
 use serde_json::{json, Value};
-use sqlx::Row;
 use tower_sessions::Session;
 use uuid::Uuid;
 use validator::Validate;
@@ -46,7 +45,7 @@ pub async fn register(
     // `sqlx::query()` creates a raw SQL query.
     // `.bind()` safely inserts parameters (prevents SQL injection).
     // `.fetch_optional()` returns Option<Row> - None if no rows match.
-    let existing = sqlx::query("SELECT id FROM users WHERE email = $1")
+    let existing: Option<sqlx::any::AnyRow> = sqlx::query("SELECT id FROM users WHERE email = $1")
         .bind(&body.email)
         .fetch_optional(&state.db.pool)
         .await?;
@@ -56,7 +55,7 @@ pub async fn register(
     }
 
     // Check if username already exists
-    let existing = sqlx::query("SELECT id FROM users WHERE username = $1")
+    let existing: Option<sqlx::any::AnyRow> = sqlx::query("SELECT id FROM users WHERE username = $1")
         .bind(&body.username)
         .fetch_optional(&state.db.pool)
         .await?;
@@ -120,7 +119,7 @@ pub async fn login(
     Json(body): Json<LoginDto>,
 ) -> Result<Json<Value>, AppError> {
     // Find user by email
-    let row = sqlx::query("SELECT * FROM users WHERE email = $1")
+    let row: sqlx::any::AnyRow = sqlx::query("SELECT * FROM users WHERE email = $1")
         .bind(&body.email)
         .fetch_optional(&state.db.pool)
         .await?
