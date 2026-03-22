@@ -47,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Connect to database and run migrations
     let database = Database::connect(&config).await?;
     database.run_migrations().await?;
+    database.run_seeds().await?;
 
     // Set up session store backed by our database.
     //

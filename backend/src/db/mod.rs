@@ -1,3 +1,4 @@
+use argon2::{Argon2, PasswordHasher, password_hash::{SaltString, rand_core::OsRng}};
 use sqlx::{AnyPool, any::AnyPoolOptions};
 use crate::config::AppConfig;
 
@@ -79,6 +80,57 @@ impl Database {
         .await?;
 
         tracing::info!("Database migrations completed");
+        Ok(())
+    }
+
+    /// Seed the database with initial users for development/testing.
+    /// This is idempotent — users that already exist are skipped.
+    pub async fn run_seeds(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let seed_users = [
+            ("admin", "admin@example.com", "password123"),
+            ("user",  "user@example.com",  "password123"),
+        ];
+
+        let argon2 = Argon2::default();
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        for (username, email, password) in seed_users {
+            // Skip if this email already exists
+            let exists: Option<sqlx::any::AnyRow> =
+                sqlx::query("SELECT id FROM users WHERE email = $1")
+                    .bind(email)
+                    .fetch_optional(&self.pool)
+                    .await?;
+
+            if exists.is_some() {
+                tracing::info!("Seed user '{}' already exists, skipping", email);
+                continue;
+            }
+
+            let salt = SaltString::generate(&mut OsRng);
+            let password_hash = argon2
+                .hash_password(password.as_bytes(), &salt)
+                .map_err(|e| format!("Password hashing failed: {e}"))?
+                .to_string();
+
+            let id = uuid::Uuid::new_v4().to_string();
+
+            sqlx::query(
+                "INSERT INTO users (id, email, username, password_hash, created_at, updated_at) \
+                 VALUES ($1, $2, $3, $4, $5, $6)",
+            )
+            .bind(&id)
+            .bind(email)
+            .bind(username)
+            .bind(&password_hash)
+            .bind(&now)
+            .bind(&now)
+            .execute(&self.pool)
+            .await?;
+
+            tracing::info!("Seeded user: {} ({})", username, email);
+        }
+
         Ok(())
     }
 }
