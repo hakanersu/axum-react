@@ -308,3 +308,23 @@ cargo run -p ruststack-backend
   make frontend  # frontend only → http://localhost:5173
 ```
 ```
+
+
+
+ Install once (globally):
+  cargo install --git https://github.com/hakanersu/axum-react sekizgen
+
+  Create a new project:
+  sekizgen new blog
+  cd blog
+  make dev
+
+  What sekizgen new blog does:
+  1. Clones the template repo (shallow, --depth=1)
+  2. Removes .git history so it's a clean slate
+  3. Replaces all ruststack references with blog in Cargo.toml files
+  4. Initialises a fresh git repo with an initial commit
+
+  The existing code generation commands still work too:
+  sekizgen generate model post title:string body:text
+  sekizgen g scaffold post title:string body:text   # shorthand
