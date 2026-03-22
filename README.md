@@ -301,4 +301,10 @@ cargo run -p ruststack-backend
 
 ## License
 
-MIT
+```bash
+```
+  make dev       # start both (Ctrl-C kills both cleanly)
+  make backend   # backend only  → http://localhost:3000
+  make frontend  # frontend only → http://localhost:5173
+```
+```
